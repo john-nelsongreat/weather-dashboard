@@ -1,6 +1,9 @@
 const cityInput = document.getElementById("cityInput");
 const searchForm = document.getElementById("searchForm");
 const locationBtn = document.getElementById("locationBtn");
+const countrySelect = document.getElementById("countrySelect");
+const stateSelect = document.getElementById("stateSelect");
+const lgaSelect = document.getElementById("lgaSelect");
 
 const locationName = document.getElementById("locationName");
 const currentDate = document.getElementById("currentDate");
@@ -14,6 +17,10 @@ const pressure = document.getElementById("pressure");
 const clouds = document.getElementById("clouds");
 const forecastList = document.getElementById("forecastList");
 const hourlyList = document.getElementById("hourlyList");
+
+const mascot = document.getElementById("mascot");
+const mascotStage = document.querySelector(".mascot-stage");
+const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const weatherCodeMap = {
   0: { label: "Clear sky", icon: "☀️" },
@@ -46,6 +53,24 @@ const weatherCodeMap = {
   99: { label: "Severe thunderstorm", icon: "⛈️" }
 };
 
+const locationData = {
+  Nigeria: {
+    Lagos: ["Ikeja", "Lekki", "Victoria Island", "Surulere"],
+    Ogun: ["Abeokuta", "Sagamu", "Ijebu-Ode"],
+    Abia: ["Aba", "Umuahia", "Ohafia"],
+    Rivers: ["Port Harcourt", "Bonny", "Obio/Akpor"]
+  },
+  Ghana: {
+    "Greater Accra": ["Accra", "Tema", "Madina"],
+    Ashanti: ["Kumasi", "Obuasi", "Ejisu"],
+    Western: ["Sekondi-Takoradi", "Takoradi", "Axim"]
+  },
+  Kenya: {
+    Nairobi: ["Nairobi", "Kibera", "Westlands"],
+    Mombasa: ["Mombasa", "Likoni", "Nyali"]
+  }
+};
+
 function formatDay(dateString) {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date);
@@ -53,9 +78,7 @@ function formatDay(dateString) {
 
 function formatTime(dateString) {
   const date = new Date(dateString);
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric"
-  }).format(date);
+  return new Intl.DateTimeFormat("en-US", { hour: "numeric" }).format(date);
 }
 
 function getWeatherDetails(code) {
@@ -146,11 +169,9 @@ async function fetchWeatherByCoordinates(lat, lon, label) {
     new URLSearchParams({
       latitude: lat,
       longitude: lon,
-      current:
-        "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,surface_pressure,cloud_cover",
+      current: "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,surface_pressure,cloud_cover",
       hourly: "temperature_2m,weather_code",
-      daily:
-        "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset",
+      daily: "weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset",
       timezone: "auto",
       forecast_days: 7
     }).toString();
@@ -197,10 +218,86 @@ async function searchCity(city) {
   };
 }
 
+function getSelectedLocationQuery() {
+  const country = countrySelect.value;
+  const state = stateSelect.value;
+  const lga = lgaSelect.value;
+
+  if (lga) return `${lga}, ${state}, ${country}`;
+  if (state) return `${state}, ${country}`;
+  if (country) return country;
+  return "";
+}
+
+function populateLocationSelectors() {
+  const countryEntries = Object.keys(locationData);
+  countrySelect.innerHTML = `<option value="">Select country</option>${countryEntries
+    .map((country) => `<option value="${country}">${country}</option>`)
+    .join("")}`;
+
+  stateSelect.innerHTML = `<option value="">Select state</option>`;
+  lgaSelect.innerHTML = `<option value="">Select LGA</option>`;
+}
+
+function updateStateOptions() {
+  const country = countrySelect.value;
+  const states = country ? Object.keys(locationData[country] || {}) : [];
+
+  stateSelect.innerHTML = `<option value="">Select state</option>${states
+    .map((state) => `<option value="${state}">${state}</option>`)
+    .join("")}`;
+
+  lgaSelect.innerHTML = `<option value="">Select LGA</option>`;
+}
+
+function updateLgaOptions() {
+  const country = countrySelect.value;
+  const state = stateSelect.value;
+  const lgas = country && state ? locationData[country][state] || [] : [];
+
+  lgaSelect.innerHTML = `<option value="">Select LGA</option>${lgas
+    .map((lga) => `<option value="${lga}">${lga}</option>`)
+    .join("")}`;
+}
+
+function fillPreferredDefaultSelection() {
+  countrySelect.value = "Nigeria";
+  updateStateOptions();
+  stateSelect.value = "Lagos";
+  updateLgaOptions();
+  lgaSelect.value = "Ikeja";
+  cityInput.value = "Ikeja, Lagos, Nigeria";
+}
+
+countrySelect.addEventListener("change", () => {
+  updateStateOptions();
+  const lookup = getSelectedLocationQuery();
+  if (lookup && !cityInput.value.trim()) {
+    cityInput.value = lookup;
+  }
+});
+
+stateSelect.addEventListener("change", () => {
+  updateLgaOptions();
+  const lookup = getSelectedLocationQuery();
+  if (lookup && !cityInput.value.trim()) {
+    cityInput.value = lookup;
+  }
+});
+
+lgaSelect.addEventListener("change", () => {
+  const lookup = getSelectedLocationQuery();
+  if (lookup) {
+    cityInput.value = lookup;
+  }
+});
+
 async function handleLocationSearch() {
-  const city = cityInput.value.trim();
+  const directLookup = getSelectedLocationQuery();
+  const city = cityInput.value.trim() || directLookup;
+
   if (!city) {
-    showError("Please enter a city name.");
+    showError("Please enter a city name or select a country/state/LGA.");
     return;
   }
 
@@ -251,6 +348,76 @@ locationBtn.addEventListener("click", async () => {
   );
 });
 
+function setupMascot() {
+  if (!mascot || !mascotStage || reducedMotionQuery.matches) {
+    return;
+  }
+
+  const head = document.getElementById("head-layer");
+  const setHeadLook = (x, y) => {
+    if (!head) return;
+    const angle = Math.max(-12, Math.min(12, x * 1.8));
+    head.style.transform = `translate(${x * 0.4}px, ${y * 0.3}px) rotate(${angle}deg)`;
+  };
+
+  mascotStage.addEventListener("pointermove", (event) => {
+    const rect = mascotStage.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+    setHeadLook(x, y);
+  });
+
+  mascotStage.addEventListener("pointerleave", () => {
+    if (head) {
+      head.style.transform = "translate(0, 0) rotate(0deg)";
+    }
+  });
+
+  const flyMascot = (event) => {
+    const rect = mascotStage.getBoundingClientRect();
+    const x = event.clientX ? event.clientX - rect.left : rect.width / 2;
+    const y = event.clientY ? event.clientY - rect.top : rect.height / 3;
+    const driftX = ((x / rect.width) - 0.5) * 70;
+    const driftY = (0.4 - (y / rect.height)) * 32;
+
+    mascot.style.transform = `translate(${driftX}px, ${driftY}px)`;
+    mascot.classList.remove("flying");
+    void mascot.offsetWidth;
+    mascot.classList.add("flying");
+
+    window.setTimeout(() => {
+      mascot.style.transform = "translate(0, 0)";
+      mascot.classList.remove("flying");
+    }, 900);
+  };
+
+  mascotStage.addEventListener("click", flyMascot);
+  mascotStage.addEventListener(
+    "touchstart",
+    (event) => {
+      if (event.touches && event.touches[0]) {
+        flyMascot({ clientX: event.touches[0].clientX, clientY: event.touches[0].clientY });
+      }
+    },
+    { passive: true }
+  );
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        mascot.classList.toggle("paused", !entry.isIntersecting);
+      });
+    },
+    { threshold: 0.2 }
+  );
+
+  observer.observe(mascotStage);
+
+  document.addEventListener("visibilitychange", () => {
+    mascot.classList.toggle("paused", document.hidden);
+  });
+}
+
 async function initDefaultWeather() {
   try {
     const defaultCity = "London";
@@ -261,4 +428,7 @@ async function initDefaultWeather() {
   }
 }
 
+populateLocationSelectors();
+fillPreferredDefaultSelection();
+setupMascot();
 initDefaultWeather();
