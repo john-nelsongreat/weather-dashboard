@@ -891,41 +891,70 @@ const nigeriaStateLgas = {
   ]
 };
 
-const lgaNameFixes = {
+const lgaNameAliases = {
   "Urue-Offong/Oruko": "Urue-Offong Oruko",
   "Kolokuma/Opokuma": "Kolokuma Opokuma",
   "Irepodun/Ifelodun": "Irepodun Ifelodun",
   "Ohaji/Egbema": "Ohaji Egbema",
   "Koko/Besse": "Koko Besse",
   "Ihitte/Uboma": "Ihitte Uboma",
-  "Ado-Odo/Ota": "Ado-Odo Ota",
+  "Ado-Odo/Ota": "Ado Odo Ota",
   "Igalamela-Odolu": "Igalamela Odolu",
   "Mopa-Muro": "Mopa Muro",
   "Ogori/Mangongo": "Ogori Mangongo",
   "Kabba/Bunu": "Kabba Bunu",
-  "Yewa South": "Yewa South",
-  "Egbado South": "Egbado South",
   "Birnin Magaji/Kiyaw": "Birnin Magaji Kiyaw",
-  "Isuikwuato": "Isuikwuato",
-  "No exact issue": "No exact issue"
+  "Mayo-Belwa": "Mayo Belwa",
+  "Ifako-Ijaiye": "Ifako Ijaye",
+  "Ifako-Ijaye": "Ifako Ijaye",
+  "Ajeromi-Ifelodun": "Ajeromi Ifelodun",
+  "Amuwo-Odofin": "Amuwo Odofin",
+  "Ibeju-Lekki": "Ibeju Lekki",
+  "Egbado South": "Egbado South",
+  "Egbado North": "Egbado North",
+  "Ife North": "Ife North",
+  "Edo North": "Edo North",
+  "Jema'a": "Jema'a",
+  "Jemaa": "Jema'a",
+  "Ibadan North-East": "Ibadan North East",
+  "Ibadan South-East": "Ibadan South East",
+  "Ibadan North-West": "Ibadan North West",
+  "Ibadan South-West": "Ibadan South West",
+  "Oyo East": "Oyo East",
+  "Oyo West": "Oyo West",
+  "Yewa South": "Yewa South",
+  "Yewa North": "Yewa North",
+  "Ado Ekiti": "Ado Ekiti",
+  "Irele": "Irele",
+  "Odo Otin": "Odo Otin"
 };
 
-const blacklistedLgas = new Set([
-  "Irepodun/Ifelodun",
+const providerProblemLgas = new Set([
   "Urue-Offong/Oruko",
-  "Ohaji/Egbema",
   "Kolokuma/Opokuma",
+  "Irepodun/Ifelodun",
+  "Ohaji/Egbema",
   "Koko/Besse",
   "Ihitte/Uboma",
-  "Birnin Magaji/Kiyaw"
+  "Ado-Odo/Ota",
+  "Birnin Magaji/Kiyaw",
+  "Igalamela-Odolu",
+  "Mopa-Muro",
+  "Ogori/Mangongo",
+  "Kabba/Bunu"
 ]);
 
-function normalizeLgaName(name) {
-  return (lgaNameFixes[name] || name).replace(/\s*\/\s*/g, " ").trim();
+function normalizeLgaForProvider(name) {
+  const base = (lgaNameAliases[name] || name)
+    .replace(/\s*\/\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return base;
 }
 
 function buildLocationQuery(lga, state) {
-  const normalizedLga = normalizeLgaName(lga);
+  const normalizedLga = normalizeLgaForProvider(lga);
   return `${normalizedLga}, ${state}, Nigeria`;
 }
 
@@ -1149,10 +1178,13 @@ function updateLocalGovAreas() {
   const selectedState = stateSelect.value;
   const localGovs = selectedState ? nigeriaStateLgas[selectedState] || [] : [];
 
-  const filteredLocalGovs = localGovs.filter((lga) => !blacklistedLgas.has(lga));
+  const filteredLocalGovs = localGovs.filter((lga) => {
+    const nameKey = lgaNameAliases[lga] || lga;
+    return !providerProblemLgas.has(lga) && !providerProblemLgas.has(nameKey);
+  });
 
   lgaSelect.innerHTML = `<option value="">Select LGA</option>${filteredLocalGovs
-    .map((lga) => `<option value="${lga}">${normalizeLgaName(lga)}</option>`)
+    .map((lga) => `<option value="${lga}">${normalizeLgaForProvider(lga)}</option>`)
     .join("")}`;
 }
 
