@@ -1,7 +1,6 @@
 const cityInput = document.getElementById("cityInput");
 const searchForm = document.getElementById("searchForm");
 const locationBtn = document.getElementById("locationBtn");
-const countrySelect = document.getElementById("countrySelect");
 const stateSelect = document.getElementById("stateSelect");
 const lgaSelect = document.getElementById("lgaSelect");
 
@@ -17,10 +16,7 @@ const pressure = document.getElementById("pressure");
 const clouds = document.getElementById("clouds");
 const forecastList = document.getElementById("forecastList");
 const hourlyList = document.getElementById("hourlyList");
-
 const mascot = document.getElementById("mascot");
-const mascotStage = document.querySelector(".mascot-stage");
-const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 const weatherCodeMap = {
   0: { label: "Clear sky", icon: "☀️" },
@@ -53,21 +49,37 @@ const weatherCodeMap = {
   99: { label: "Severe thunderstorm", icon: "⛈️" }
 };
 
-const locationData = {
-  Nigeria: {
-    Lagos: ["Ikeja", "Lekki", "Victoria Island", "Surulere"],
-    Ogun: ["Abeokuta", "Sagamu", "Ijebu-Ode"],
-    Abia: ["Aba", "Umuahia", "Ohafia"],
-    Rivers: ["Port Harcourt", "Bonny", "Obio/Akpor"]
+const nigeriaLocations = {
+  Lagos: {
+    Ikeja: { lat: 6.6018, lon: 3.3515 },
+    Lekki: { lat: 6.4541, lon: 3.4705 },
+    "Victoria Island": { lat: 6.4281, lon: 3.4219 },
+    Surulere: { lat: 6.5024, lon: 3.3649 }
   },
-  Ghana: {
-    "Greater Accra": ["Accra", "Tema", "Madina"],
-    Ashanti: ["Kumasi", "Obuasi", "Ejisu"],
-    Western: ["Sekondi-Takoradi", "Takoradi", "Axim"]
+  Ogun: {
+    Abeokuta: { lat: 7.1509, lon: 3.3485 },
+    Sagamu: { lat: 6.835, lon: 3.632 },
+    "Ijebu-Ode": { lat: 6.826, lon: 3.917 }
   },
-  Kenya: {
-    Nairobi: ["Nairobi", "Kibera", "Westlands"],
-    Mombasa: ["Mombasa", "Likoni", "Nyali"]
+  Abuja: {
+    Gwarinpa: { lat: 9.118, lon: 7.404 },
+    Maitama: { lat: 9.095, lon: 7.483 },
+    Wuse: { lat: 9.076, lon: 7.486 }
+  },
+  Rivers: {
+    "Port Harcourt": { lat: 4.8156, lon: 7.0498 },
+    Bonny: { lat: 4.442, lon: 7.176 },
+    "Obio/Akpor": { lat: 4.907, lon: 7.054 }
+  },
+  Kano: {
+    Kano: { lat: 12.0022, lon: 8.592 },
+    Nassarawa: { lat: 12.081, lon: 8.517 },
+    Fagge: { lat: 12.008, lon: 8.519 }
+  },
+  Enugu: {
+    Enugu: { lat: 6.5244, lon: 7.4954 },
+    Nsukka: { lat: 6.856, lon: 7.392 },
+    Oji: { lat: 6.454, lon: 7.211 }
   }
 };
 
@@ -218,86 +230,52 @@ async function searchCity(city) {
   };
 }
 
-function getSelectedLocationQuery() {
-  const country = countrySelect.value;
-  const state = stateSelect.value;
-  const lga = lgaSelect.value;
-
-  if (lga) return `${lga}, ${state}, ${country}`;
-  if (state) return `${state}, ${country}`;
-  if (country) return country;
-  return "";
-}
-
-function populateLocationSelectors() {
-  const countryEntries = Object.keys(locationData);
-  countrySelect.innerHTML = `<option value="">Select country</option>${countryEntries
-    .map((country) => `<option value="${country}">${country}</option>`)
-    .join("")}`;
-
-  stateSelect.innerHTML = `<option value="">Select state</option>`;
-  lgaSelect.innerHTML = `<option value="">Select LGA</option>`;
-}
-
-function updateStateOptions() {
-  const country = countrySelect.value;
-  const states = country ? Object.keys(locationData[country] || {}) : [];
-
+function populateStateOptions() {
+  const states = Object.keys(nigeriaLocations);
   stateSelect.innerHTML = `<option value="">Select state</option>${states
     .map((state) => `<option value="${state}">${state}</option>`)
     .join("")}`;
-
   lgaSelect.innerHTML = `<option value="">Select LGA</option>`;
 }
 
 function updateLgaOptions() {
-  const country = countrySelect.value;
   const state = stateSelect.value;
-  const lgas = country && state ? locationData[country][state] || [] : [];
+  const lgas = state ? Object.keys(nigeriaLocations[state] || {}) : [];
 
   lgaSelect.innerHTML = `<option value="">Select LGA</option>${lgas
     .map((lga) => `<option value="${lga}">${lga}</option>`)
     .join("")}`;
 }
 
-function fillPreferredDefaultSelection() {
-  countrySelect.value = "Nigeria";
-  updateStateOptions();
-  stateSelect.value = "Lagos";
-  updateLgaOptions();
-  lgaSelect.value = "Ikeja";
-  cityInput.value = "Ikeja, Lagos, Nigeria";
-}
+function applySelectedLocation() {
+  const state = stateSelect.value;
+  const lga = lgaSelect.value;
+  if (!state || !lga) return;
 
-countrySelect.addEventListener("change", () => {
-  updateStateOptions();
-  const lookup = getSelectedLocationQuery();
-  if (lookup && !cityInput.value.trim()) {
-    cityInput.value = lookup;
-  }
-});
+  const location = nigeriaLocations[state]?.[lga];
+  if (!location) return;
+
+  cityInput.value = `${lga}, ${state}, Nigeria`;
+  fetchWeatherByCoordinates(location.lat, location.lon, `${lga}, ${state}, Nigeria`).catch(() => {
+    showError("Unable to load weather for the selected location.");
+  });
+}
 
 stateSelect.addEventListener("change", () => {
   updateLgaOptions();
-  const lookup = getSelectedLocationQuery();
-  if (lookup && !cityInput.value.trim()) {
-    cityInput.value = lookup;
+  if (stateSelect.value && !lgaSelect.value) {
+    cityInput.value = `${stateSelect.value}, Nigeria`;
   }
 });
 
 lgaSelect.addEventListener("change", () => {
-  const lookup = getSelectedLocationQuery();
-  if (lookup) {
-    cityInput.value = lookup;
-  }
+  applySelectedLocation();
 });
 
 async function handleLocationSearch() {
-  const directLookup = getSelectedLocationQuery();
-  const city = cityInput.value.trim() || directLookup;
-
+  const city = cityInput.value.trim();
   if (!city) {
-    showError("Please enter a city name or select a country/state/LGA.");
+    showError("Please enter a city name or choose a state and LGA.");
     return;
   }
 
@@ -315,120 +293,60 @@ searchForm.addEventListener("submit", (event) => {
   handleLocationSearch();
 });
 
-locationBtn.addEventListener("click", async () => {
-  if (!navigator.geolocation) {
-    showError("Geolocation is not supported by this browser.");
-    return;
-  }
-
-  locationBtn.disabled = true;
-  locationBtn.textContent = "Locating...";
-
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const lat = position.coords.latitude;
-      const lon = position.coords.longitude;
-
-      try {
-        const label = "Your Location";
-        await fetchWeatherByCoordinates(lat, lon, label);
-        document.querySelector(".error")?.remove();
-      } catch (error) {
-        showError("Could not load weather for your location.");
-      } finally {
-        locationBtn.disabled = false;
-        locationBtn.textContent = "Use My Location";
-      }
-    },
-    () => {
-      showError("Location permission was denied. Try searching for a city manually.");
-      locationBtn.disabled = false;
-      locationBtn.textContent = "Use My Location";
-    }
-  );
-});
-
 function setupMascot() {
-  if (!mascot || !mascotStage || reducedMotionQuery.matches) {
-    return;
-  }
+  if (!mascot) return;
 
-  const head = document.getElementById("head-layer");
-  const setHeadLook = (x, y) => {
-    if (!head) return;
-    const angle = Math.max(-12, Math.min(12, x * 1.8));
-    head.style.transform = `translate(${x * 0.4}px, ${y * 0.3}px) rotate(${angle}deg)`;
-  };
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion) return;
 
-  mascotStage.addEventListener("pointermove", (event) => {
-    const rect = mascotStage.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-    setHeadLook(x, y);
-  });
-
-  mascotStage.addEventListener("pointerleave", () => {
-    if (head) {
-      head.style.transform = "translate(0, 0) rotate(0deg)";
-    }
-  });
-
-  const flyMascot = (event) => {
-    const rect = mascotStage.getBoundingClientRect();
-    const x = event.clientX ? event.clientX - rect.left : rect.width / 2;
-    const y = event.clientY ? event.clientY - rect.top : rect.height / 3;
-    const driftX = ((x / rect.width) - 0.5) * 70;
-    const driftY = (0.4 - (y / rect.height)) * 32;
-
-    mascot.style.transform = `translate(${driftX}px, ${driftY}px)`;
+  mascot.addEventListener("click", () => {
     mascot.classList.remove("flying");
     void mascot.offsetWidth;
     mascot.classList.add("flying");
 
+    const pos = mascot.style.transform || "";
+    const randomX = (Math.random() - 0.5) * 120;
+    const randomY = -Math.random() * 70 - 25;
+    mascot.style.transform = `translate(${randomX}px, ${randomY}px) rotate(${(Math.random() - 0.5) * 24}deg)`;
+
     window.setTimeout(() => {
-      mascot.style.transform = "translate(0, 0)";
+      mascot.style.transform = pos || "translate(0, 0)";
       mascot.classList.remove("flying");
-    }, 900);
-  };
+    }, 1400);
+  });
 
-  mascotStage.addEventListener("click", flyMascot);
-  mascotStage.addEventListener(
-    "touchstart",
-    (event) => {
-      if (event.touches && event.touches[0]) {
-        flyMascot({ clientX: event.touches[0].clientX, clientY: event.touches[0].clientY });
-      }
-    },
-    { passive: true }
-  );
+  const stage = mascot.closest(".mascot-stage");
+  if (!stage) return;
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        mascot.classList.toggle("paused", !entry.isIntersecting);
-      });
-    },
-    { threshold: 0.2 }
-  );
+  stage.addEventListener("pointermove", (event) => {
+    const rect = stage.getBoundingClientRect();
+    const x = (event.clientX - rect.left) / rect.width;
+    const tilt = (x - 0.5) * 18;
+    mascot.style.transform = `rotate(${tilt}deg)`;
+  });
 
-  observer.observe(mascotStage);
-
-  document.addEventListener("visibilitychange", () => {
-    mascot.classList.toggle("paused", document.hidden);
+  stage.addEventListener("pointerleave", () => {
+    mascot.style.transform = "rotate(0deg)";
   });
 }
 
 async function initDefaultWeather() {
+  const defaultState = "Lagos";
+  const defaultLga = "Ikeja";
+  const place = nigeriaLocations[defaultState][defaultLga];
+
+  stateSelect.value = defaultState;
+  updateLgaOptions();
+  lgaSelect.value = defaultLga;
+  cityInput.value = `${defaultLga}, ${defaultState}, Nigeria`;
+
   try {
-    const defaultCity = "London";
-    const place = await searchCity(defaultCity);
-    await fetchWeatherByCoordinates(place.lat, place.lon, place.label);
+    await fetchWeatherByCoordinates(place.lat, place.lon, `${defaultLga}, ${defaultState}, Nigeria`);
   } catch (error) {
     showError("Unable to load default weather.");
   }
 }
 
-populateLocationSelectors();
-fillPreferredDefaultSelection();
+populateStateOptions();
 setupMascot();
 initDefaultWeather();
