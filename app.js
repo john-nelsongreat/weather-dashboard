@@ -891,6 +891,44 @@ const nigeriaStateLgas = {
   ]
 };
 
+const lgaNameFixes = {
+  "Urue-Offong/Oruko": "Urue-Offong Oruko",
+  "Kolokuma/Opokuma": "Kolokuma Opokuma",
+  "Irepodun/Ifelodun": "Irepodun Ifelodun",
+  "Ohaji/Egbema": "Ohaji Egbema",
+  "Koko/Besse": "Koko Besse",
+  "Ihitte/Uboma": "Ihitte Uboma",
+  "Ado-Odo/Ota": "Ado-Odo Ota",
+  "Igalamela-Odolu": "Igalamela Odolu",
+  "Mopa-Muro": "Mopa Muro",
+  "Ogori/Mangongo": "Ogori Mangongo",
+  "Kabba/Bunu": "Kabba Bunu",
+  "Yewa South": "Yewa South",
+  "Egbado South": "Egbado South",
+  "Birnin Magaji/Kiyaw": "Birnin Magaji Kiyaw",
+  "Isuikwuato": "Isuikwuato",
+  "No exact issue": "No exact issue"
+};
+
+const blacklistedLgas = new Set([
+  "Irepodun/Ifelodun",
+  "Urue-Offong/Oruko",
+  "Ohaji/Egbema",
+  "Kolokuma/Opokuma",
+  "Koko/Besse",
+  "Ihitte/Uboma",
+  "Birnin Magaji/Kiyaw"
+]);
+
+function normalizeLgaName(name) {
+  return (lgaNameFixes[name] || name).replace(/\s*\/\s*/g, " ").trim();
+}
+
+function buildLocationQuery(lga, state) {
+  const normalizedLga = normalizeLgaName(lga);
+  return `${normalizedLga}, ${state}, Nigeria`;
+}
+
 function formatDay(dateString) {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat("en-US", { weekday: "short" }).format(date);
@@ -1017,6 +1055,35 @@ function applyWeatherEffects(weatherCode) {
   }
 }
 
+async function geocodeLocation(query) {
+  const geocodeUrl =
+    "https://geocoding-api.open-meteo.com/v1/search?" +
+    new URLSearchParams({
+      name: query,
+      count: 1,
+      language: "en",
+      format: "json"
+    }).toString();
+
+  const response = await fetch(geocodeUrl);
+  if (!response.ok) {
+    throw new Error("City lookup failed.");
+  }
+
+  const result = await response.json();
+
+  if (!result.results || result.results.length === 0) {
+    return null;
+  }
+
+  const place = result.results[0];
+  return {
+    lat: place.latitude,
+    lon: place.longitude,
+    label: `${place.name}${place.country ? ", " + place.country : ""}`
+  };
+}
+
 async function fetchWeatherByCoordinates(lat, lon, label) {
   const url =
     "https://api.open-meteo.com/v1/forecast?" +
@@ -1044,32 +1111,30 @@ async function fetchWeatherByCoordinates(lat, lon, label) {
 }
 
 async function searchCity(city) {
-  const geocodeUrl =
-    "https://geocoding-api.open-meteo.com/v1/search?" +
-    new URLSearchParams({
-      name: city,
-      count: 1,
-      language: "en",
-      format: "json"
-    }).toString();
-
-  const response = await fetch(geocodeUrl);
-  if (!response.ok) {
-    throw new Error("City lookup failed.");
+  const baseQuery = city.trim();
+  if (!baseQuery) {
+    throw new Error("Please enter a city name or choose a state and LGA.");
   }
 
-  const result = await response.json();
-
-  if (!result.results || result.results.length === 0) {
-    throw new Error(`No matching city found for "${city}".`);
+  const directMatch = await geocodeLocation(baseQuery);
+  if (directMatch) {
+    return directMatch;
   }
 
-  const place = result.results[0];
-  return {
-    lat: place.latitude,
-    lon: place.longitude,
-    label: `${place.name}${place.country ? ", " + place.country : ""}`
-  };
+  const withNigeria = await geocodeLocation(`${baseQuery}, Nigeria`);
+  if (withNigeria) {
+    return withNigeria;
+  }
+
+  const normalized = baseQuery.replace(/\s*\/\s*/g, " ");
+  if (normalized !== baseQuery) {
+    const normalizedMatch = await geocodeLocation(normalized);
+    if (normalizedMatch) {
+      return normalizedMatch;
+    }
+  }
+
+  throw new Error(`No matching city found for "${city}".`);
 }
 
 function populateStates() {
@@ -1084,8 +1149,10 @@ function updateLocalGovAreas() {
   const selectedState = stateSelect.value;
   const localGovs = selectedState ? nigeriaStateLgas[selectedState] || [] : [];
 
-  lgaSelect.innerHTML = `<option value="">Select LGA</option>${localGovs
-    .map((lga) => `<option value="${lga}">${lga}</option>`)
+  const filteredLocalGovs = localGovs.filter((lga) => !blacklistedLgas.has(lga));
+
+  lgaSelect.innerHTML = `<option value="">Select LGA</option>${filteredLocalGovs
+    .map((lga) => `<option value="${lga}">${normalizeLgaName(lga)}</option>`)
     .join("")}`;
 }
 
@@ -1094,7 +1161,7 @@ async function applySelectedLocation() {
   const lga = lgaSelect.value;
   if (!state || !lga) return;
 
-  const locationNameText = `${lga}, ${state}, Nigeria`;
+  const locationNameText = buildLocationQuery(lga, state);
   cityInput.value = locationNameText;
   updateLocationChip(locationNameText);
 
@@ -1146,7 +1213,7 @@ async function initDefaultWeather() {
   stateSelect.value = defaultState;
   updateLocalGovAreas();
   lgaSelect.value = defaultLga;
-  const defaultQuery = `${defaultLga}, ${defaultState}, Nigeria`;
+  const defaultQuery = buildLocationQuery(defaultLga, defaultState);
   cityInput.value = defaultQuery;
   updateLocationChip(defaultQuery);
 
