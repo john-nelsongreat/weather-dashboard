@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-icon">☀️</span>
+          <h1>Weather Dashboard</h1>
+        </div>
+
+        <form id="searchForm" class="search-form">
+          <input
+            id="cityInput"
+            type="text"
+            placeholder="Search city..."
+            aria-label="Search city"
+          />
+          <button type="submit">Search</button>
+        </form>
+
+        <button id="locationBtn" class="location-btn" type="button">
+          Use My Location
+        </button>
+      </header>
+
+      <main id="appContent" class="app-content">
+        <section class="current-card panel">
+          <div class="current-header">
+            <div>
+              <p id="locationName" class="location-name">Loading...</p>
+              <p id="currentDate" class="current-date"></p>
+            </div>
+            <div id="weatherIcon" class="weather-icon">⏳</div>
+          </div>
+
+          <div class="temp-row">
+            <div id="currentTemp" class="current-temp">--°</div>
+            <div class="meta">
+              <p id="conditionText" class="condition-text">Loading...</p>
+              <p id="feelsLike" class="subtle">Feels like --°</p>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat">
+              <span>Humidity</span>
+              <strong id="humidity">--%</strong>
+            </div>
+            <div class="stat">
+              <span>Wind</span>
+              <strong id="wind">-- km/h</strong>
+            </div>
+            <div class="stat">
+              <span>Pressure</span>
+              <strong id="pressure">-- hPa</strong>
+            </div>
+            <div class="stat">
+              <span>Clouds</span>
+              <strong id="clouds">--%</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="forecast panel">
+          <div class="section-title">
+            <h2>7-Day Forecast</h2>
+          </div>
+          <div id="forecastList" class="forecast-list"></div>
+        </section>
+
+        <section class="hourly panel">
+          <div class="section-title">
+            <h2>Hourly Outlook</h2>
+          </div>
+          <div id="hourlyList" class="hourly-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
