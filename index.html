@@ -3,47 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weather Dashboard</title>
+    <title>Skyline Weather</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app">
+    <div class="page-shell">
       <header class="topbar">
-        <div class="brand">
-          <span class="brand-icon">☀️</span>
-          <h1>Weather Dashboard</h1>
+        <div class="brand-wrap">
+          <div class="brand-mark">☁️</div>
+          <div>
+            <p class="eyebrow">Live forecast</p>
+            <h1>Skyline Weather</h1>
+          </div>
         </div>
 
-        <form id="searchForm" class="search-form">
+        <form id="searchForm" class="search-form" autocomplete="off">
+          <label class="sr-only" for="cityInput">Search city</label>
           <input
             id="cityInput"
             type="text"
-            placeholder="Search city..."
+            placeholder="Search city or town..."
             aria-label="Search city"
           />
           <button type="submit">Search</button>
         </form>
 
         <button id="locationBtn" class="location-btn" type="button">
-          Use My Location
+          Use my location
         </button>
       </header>
 
-      <main id="appContent" class="app-content">
-        <section class="current-card panel">
-          <div class="current-header">
-            <div>
-              <p id="locationName" class="location-name">Loading...</p>
-              <p id="currentDate" class="current-date"></p>
+      <main id="appContent" class="dashboard">
+        <section class="current-card panel hero-card">
+          <div class="hero-copy">
+            <p class="eyebrow subtle-eyebrow">Current conditions</p>
+            <div class="current-header">
+              <div>
+                <p id="locationName" class="location-name">Loading...</p>
+                <p id="currentDate" class="current-date"></p>
+              </div>
+              <div id="weatherIcon" class="weather-icon" aria-label="Weather icon">⏳</div>
             </div>
-            <div id="weatherIcon" class="weather-icon">⏳</div>
-          </div>
 
-          <div class="temp-row">
-            <div id="currentTemp" class="current-temp">--°</div>
-            <div class="meta">
-              <p id="conditionText" class="condition-text">Loading...</p>
-              <p id="feelsLike" class="subtle">Feels like --°</p>
+            <div class="temp-row">
+              <div id="currentTemp" class="current-temp">--°</div>
+              <div class="meta">
+                <p id="conditionText" class="condition-text">Loading...</p>
+                <p id="feelsLike" class="subtle">Feels like --°</p>
+              </div>
             </div>
           </div>
 
@@ -69,14 +82,14 @@
 
         <section class="forecast panel">
           <div class="section-title">
-            <h2>7-Day Forecast</h2>
+            <h2>7-day forecast</h2>
           </div>
           <div id="forecastList" class="forecast-list"></div>
         </section>
 
         <section class="hourly panel">
           <div class="section-title">
-            <h2>Hourly Outlook</h2>
+            <h2>Hourly outlook</h2>
           </div>
           <div id="hourlyList" class="hourly-list"></div>
         </section>
