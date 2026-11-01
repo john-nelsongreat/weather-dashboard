@@ -3,6 +3,7 @@ const searchForm = document.getElementById("searchForm");
 const stateSelect = document.getElementById("stateSelect");
 const lgaSelect = document.getElementById("lgaSelect");
 const rainOverlay = document.getElementById("weatherRain");
+const locationChip = document.getElementById("locationChip");
 
 const locationName = document.getElementById("locationName");
 const currentDate = document.getElementById("currentDate");
@@ -900,6 +901,12 @@ function formatTime(dateString) {
   return new Intl.DateTimeFormat("en-US", { hour: "numeric" }).format(date);
 }
 
+function updateLocationChip(value) {
+  if (locationChip) {
+    locationChip.textContent = value;
+  }
+}
+
 function getWeatherDetails(code) {
   return weatherCodeMap[code] || { label: "Unknown", icon: "❔" };
 }
@@ -909,6 +916,7 @@ function renderCurrentWeather(data) {
   const weather = getWeatherDetails(current.weather_code);
 
   locationName.textContent = data.locationName || "Weather";
+  updateLocationChip(data.locationName || "Weather");
   currentDate.textContent = new Date().toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -1088,6 +1096,7 @@ async function applySelectedLocation() {
 
   const locationNameText = `${lga}, ${state}, Nigeria`;
   cityInput.value = locationNameText;
+  updateLocationChip(locationNameText);
 
   try {
     const result = await searchCity(locationNameText);
@@ -1118,6 +1127,7 @@ async function handleLocationSearch() {
 
   try {
     const place = await searchCity(city);
+    updateLocationChip(place.label);
     await fetchWeatherByCoordinates(place.lat, place.lon, place.label);
     document.querySelector(".error")?.remove();
   } catch (error) {
@@ -1132,12 +1142,13 @@ searchForm.addEventListener("submit", (event) => {
 
 async function initDefaultWeather() {
   const defaultState = "Lagos";
-  const defaultLga = "Ikeja";
+  const defaultLga = "Surulere";
   stateSelect.value = defaultState;
   updateLocalGovAreas();
   lgaSelect.value = defaultLga;
   const defaultQuery = `${defaultLga}, ${defaultState}, Nigeria`;
   cityInput.value = defaultQuery;
+  updateLocationChip(defaultQuery);
 
   try {
     const place = await searchCity(defaultQuery);
