@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <div id="weatherRain" class="weather-rain" aria-hidden="true"></div>
+
     <div class="page-shell">
       <header class="topbar">
         <div class="brand-wrap">
@@ -90,38 +92,13 @@
           </div>
         </section>
 
-        <aside class="mascot-shell" aria-label="Weather mascot side stage">
-          <div class="mascot-stage" aria-label="Weather mascot cloud">
-            <div class="cloud cloud-back"></div>
-            <div class="cloud cloud-front"></div>
-            <div class="mascot-figure" id="mascot" role="img" aria-label="Weather mascot">
-              <div class="shadow"></div>
-              <div class="head">
-                <span class="hair"></span>
-                <span class="eye eye-left"></span>
-                <span class="eye eye-right"></span>
-                <span class="smile"></span>
-              </div>
-              <div class="body"></div>
-              <div class="arm arm-left"></div>
-              <div class="arm arm-right"></div>
-              <div class="leg leg-left"></div>
-              <div class="leg leg-right"></div>
-            </div>
-          </div>
-        </aside>
-
         <section class="forecast panel">
-          <div class="section-title">
-            <h2>7-day forecast</h2>
-          </div>
+          <div class="section-title"><h2>7-day forecast</h2></div>
           <div id="forecastList" class="forecast-list"></div>
         </section>
 
         <section class="hourly panel">
-          <div class="section-title">
-            <h2>Hourly outlook</h2>
-          </div>
+          <div class="section-title"><h2>Hourly outlook</h2></div>
           <div id="hourlyList" class="hourly-list"></div>
         </section>
       </main>

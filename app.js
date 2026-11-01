@@ -1,8 +1,8 @@
 const cityInput = document.getElementById("cityInput");
 const searchForm = document.getElementById("searchForm");
-const locationBtn = document.getElementById("locationBtn");
 const stateSelect = document.getElementById("stateSelect");
 const lgaSelect = document.getElementById("lgaSelect");
+const rainOverlay = document.getElementById("weatherRain");
 
 const locationName = document.getElementById("locationName");
 const currentDate = document.getElementById("currentDate");
@@ -16,7 +16,6 @@ const pressure = document.getElementById("pressure");
 const clouds = document.getElementById("clouds");
 const forecastList = document.getElementById("forecastList");
 const hourlyList = document.getElementById("hourlyList");
-const mascot = document.getElementById("mascot");
 
 const weatherCodeMap = {
   0: { label: "Clear sky", icon: "☀️" },
@@ -49,38 +48,46 @@ const weatherCodeMap = {
   99: { label: "Severe thunderstorm", icon: "⛈️" }
 };
 
-const nigeriaLocations = {
-  Lagos: {
-    Ikeja: { lat: 6.6018, lon: 3.3515 },
-    Lekki: { lat: 6.4541, lon: 3.4705 },
-    "Victoria Island": { lat: 6.4281, lon: 3.4219 },
-    Surulere: { lat: 6.5024, lon: 3.3649 }
-  },
-  Ogun: {
-    Abeokuta: { lat: 7.1509, lon: 3.3485 },
-    Sagamu: { lat: 6.835, lon: 3.632 },
-    "Ijebu-Ode": { lat: 6.826, lon: 3.917 }
-  },
-  Abuja: {
-    Gwarinpa: { lat: 9.118, lon: 7.404 },
-    Maitama: { lat: 9.095, lon: 7.483 },
-    Wuse: { lat: 9.076, lon: 7.486 }
-  },
-  Rivers: {
-    "Port Harcourt": { lat: 4.8156, lon: 7.0498 },
-    Bonny: { lat: 4.442, lon: 7.176 },
-    "Obio/Akpor": { lat: 4.907, lon: 7.054 }
-  },
-  Kano: {
-    Kano: { lat: 12.0022, lon: 8.592 },
-    Nassarawa: { lat: 12.081, lon: 8.517 },
-    Fagge: { lat: 12.008, lon: 8.519 }
-  },
-  Enugu: {
-    Enugu: { lat: 6.5244, lon: 7.4954 },
-    Nsukka: { lat: 6.856, lon: 7.392 },
-    Oji: { lat: 6.454, lon: 7.211 }
-  }
+const rainyCodes = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99]);
+
+const nigeriaStateLgas = {
+  Abia: ["Aba", "Umuahia", "Ohafia"],
+  Adamawa: ["Yola", "Mubi", "Jimeta"],
+  AkwaIbom: ["Uyo", "Eket", "Ikot Ekpene"],
+  Anambra: ["Awka", "Onitsha", "Nnewi"],
+  Bauchi: ["Bauchi", "Azare", "Misau"],
+  Bayelsa: ["Yenagoa", "Brass", "Ogbia"],
+  Benue: ["Makurdi", "Otukpo", "Gboko"],
+  Borno: ["Maiduguri", "Biu", "Kano"],
+  CrossRiver: ["Calabar", "Ugep", "Ikom"],
+  Delta: ["Asaba", "Warri", "Sapele"],
+  Ebonyi: ["Abakaliki", "Afikpo", "Onueke"],
+  Edo: ["Benin City", "Auchi", "Ekpoma"],
+  Ekiti: ["Ado Ekiti", "Ikere", "Ijero"],
+  Enugu: ["Enugu", "Nsukka", "Agbani"],
+  FCT: ["Garki", "Wuse", "Maitama"],
+  Gombe: ["Gombe", "Kumo", "Billiri"],
+  Imo: ["Owerri", "Orlu", "Okigwe"],
+  Jigawa: ["Dutse", "Hadejia", "Birnin Kudu"],
+  Kaduna: ["Kaduna", "Zaria", "Kafanchan"],
+  Kano: ["Kano", "Gwale", "Nassarawa"],
+  Katsina: ["Katsina", "Kankia", "Daura"],
+  Kebbi: ["Birnin Kebbi", "Argungu", "Yelwa"],
+  Kogi: ["Lokoja", "Idah", "Okene"],
+  Kwara: ["Ilorin", "Offa", "Jebba"],
+  Lagos: ["Ikeja", "Lekki", "Victoria Island", "Surulere", "Yaba"],
+  Nasarawa: ["Lafia", "Keffi", "Karu"],
+  Niger: ["Minna", "Bida", "Kontagora"],
+  Ogun: ["Abeokuta", "Sagamu", "Ijebu Ode"],
+  Ondo: ["Akure", "Owo", "Ondo City"],
+  Osun: ["Osogbo", "Ilesa", "Ikire"],
+  Oyo: ["Ibadan", "Ogbomoso", "Iseyin"],
+  Plateau: ["Jos", "Barkin Ladi", "Pankshin"],
+  Rivers: ["Port Harcourt", "Bonny", "Obio Akpor"],
+  Sokoto: ["Sokoto", "Tambuwal", "Gwadabawa"],
+  Taraba: ["Jalingo", "Wukari", "Serti"],
+  Yobe: ["Damaturu", "Potiskum", "Gujba"],
+  Zamfara: ["Gusau", "Kaura Namoda", "Talata Mafara"]
 };
 
 function formatDay(dateString) {
@@ -117,6 +124,8 @@ function renderCurrentWeather(data) {
   wind.textContent = `${Math.round(current.wind_speed_10m)} km/h`;
   pressure.textContent = `${Math.round(current.surface_pressure)} hPa`;
   clouds.textContent = `${Math.round(current.cloud_cover)}%`;
+
+  applyWeatherEffects(current.weather_code);
 }
 
 function renderForecast(data) {
@@ -175,6 +184,31 @@ function showError(message) {
   document.getElementById("appContent").prepend(errorNode);
 }
 
+function buildRainOverlay() {
+  if (!rainOverlay) return;
+  rainOverlay.innerHTML = "";
+
+  const dropCount = 80;
+  for (let i = 0; i < dropCount; i += 1) {
+    const drop = document.createElement("span");
+    drop.className = "drop";
+    drop.style.left = `${Math.random() * 100}%`;
+    drop.style.animationDelay = `${(Math.random() * 1.2).toFixed(2)}s`;
+    drop.style.animationDuration = `${(0.8 + Math.random() * 1.2).toFixed(2)}s`;
+    drop.style.opacity = (0.25 + Math.random() * 0.7).toFixed(2);
+    rainOverlay.appendChild(drop);
+  }
+}
+
+function applyWeatherEffects(weatherCode) {
+  if (!rainOverlay) return;
+  const isRainy = rainyCodes.has(Number(weatherCode));
+  rainOverlay.classList.toggle("active", isRainy);
+  if (!isRainy && rainOverlay.innerHTML.trim() === "") {
+    buildRainOverlay();
+  }
+}
+
 async function fetchWeatherByCoordinates(lat, lon, label) {
   const url =
     "https://api.open-meteo.com/v1/forecast?" +
@@ -230,39 +264,42 @@ async function searchCity(city) {
   };
 }
 
-function populateStateOptions() {
-  const states = Object.keys(nigeriaLocations);
+function populateStates() {
+  const states = Object.keys(nigeriaStateLgas);
   stateSelect.innerHTML = `<option value="">Select state</option>${states
     .map((state) => `<option value="${state}">${state}</option>`)
     .join("")}`;
   lgaSelect.innerHTML = `<option value="">Select LGA</option>`;
 }
 
-function updateLgaOptions() {
-  const state = stateSelect.value;
-  const lgas = state ? Object.keys(nigeriaLocations[state] || {}) : [];
+function updateLocalGovAreas() {
+  const selectedState = stateSelect.value;
+  const localGovs = selectedState ? nigeriaStateLgas[selectedState] || [] : [];
 
-  lgaSelect.innerHTML = `<option value="">Select LGA</option>${lgas
+  lgaSelect.innerHTML = `<option value="">Select LGA</option>${localGovs
     .map((lga) => `<option value="${lga}">${lga}</option>`)
     .join("")}`;
 }
 
-function applySelectedLocation() {
+async function applySelectedLocation() {
   const state = stateSelect.value;
   const lga = lgaSelect.value;
   if (!state || !lga) return;
 
-  const location = nigeriaLocations[state]?.[lga];
-  if (!location) return;
+  const locationNameText = `${lga}, ${state}, Nigeria`;
+  cityInput.value = locationNameText;
 
-  cityInput.value = `${lga}, ${state}, Nigeria`;
-  fetchWeatherByCoordinates(location.lat, location.lon, `${lga}, ${state}, Nigeria`).catch(() => {
-    showError("Unable to load weather for the selected location.");
-  });
+  try {
+    const result = await searchCity(locationNameText);
+    await fetchWeatherByCoordinates(result.lat, result.lon, result.label);
+    document.querySelector(".error")?.remove();
+  } catch (error) {
+    showError(error.message || "Unable to fetch weather.");
+  }
 }
 
 stateSelect.addEventListener("change", () => {
-  updateLgaOptions();
+  updateLocalGovAreas();
   if (stateSelect.value && !lgaSelect.value) {
     cityInput.value = `${stateSelect.value}, Nigeria`;
   }
@@ -293,60 +330,23 @@ searchForm.addEventListener("submit", (event) => {
   handleLocationSearch();
 });
 
-function setupMascot() {
-  if (!mascot) return;
-
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (prefersReducedMotion) return;
-
-  mascot.addEventListener("click", () => {
-    mascot.classList.remove("flying");
-    void mascot.offsetWidth;
-    mascot.classList.add("flying");
-
-    const pos = mascot.style.transform || "";
-    const randomX = (Math.random() - 0.5) * 120;
-    const randomY = -Math.random() * 70 - 25;
-    mascot.style.transform = `translate(${randomX}px, ${randomY}px) rotate(${(Math.random() - 0.5) * 24}deg)`;
-
-    window.setTimeout(() => {
-      mascot.style.transform = pos || "translate(0, 0)";
-      mascot.classList.remove("flying");
-    }, 1400);
-  });
-
-  const stage = mascot.closest(".mascot-stage");
-  if (!stage) return;
-
-  stage.addEventListener("pointermove", (event) => {
-    const rect = stage.getBoundingClientRect();
-    const x = (event.clientX - rect.left) / rect.width;
-    const tilt = (x - 0.5) * 18;
-    mascot.style.transform = `rotate(${tilt}deg)`;
-  });
-
-  stage.addEventListener("pointerleave", () => {
-    mascot.style.transform = "rotate(0deg)";
-  });
-}
-
 async function initDefaultWeather() {
   const defaultState = "Lagos";
   const defaultLga = "Ikeja";
-  const place = nigeriaLocations[defaultState][defaultLga];
-
   stateSelect.value = defaultState;
-  updateLgaOptions();
+  updateLocalGovAreas();
   lgaSelect.value = defaultLga;
-  cityInput.value = `${defaultLga}, ${defaultState}, Nigeria`;
+  const defaultQuery = `${defaultLga}, ${defaultState}, Nigeria`;
+  cityInput.value = defaultQuery;
 
   try {
-    await fetchWeatherByCoordinates(place.lat, place.lon, `${defaultLga}, ${defaultState}, Nigeria`);
+    const place = await searchCity(defaultQuery);
+    await fetchWeatherByCoordinates(place.lat, place.lon, place.label);
   } catch (error) {
     showError("Unable to load default weather.");
   }
 }
 
-populateStateOptions();
-setupMascot();
+buildRainOverlay();
+populateStates();
 initDefaultWeather();
